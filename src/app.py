@@ -18,7 +18,7 @@ try:
         DuplicateEnrollmentError,
         EnrollmentNotFoundError,
         add_enrollment,
-        get_activities,
+        get_activities as load_activities,
         initialize_database,
         remove_enrollment,
     )
@@ -28,7 +28,7 @@ except ImportError:  # pragma: no cover - supports running `python app.py`
         DuplicateEnrollmentError,
         EnrollmentNotFoundError,
         add_enrollment,
-        get_activities,
+        get_activities as load_activities,
         initialize_database,
         remove_enrollment,
     )
@@ -56,7 +56,7 @@ def root():
 
 @app.get("/activities")
 def get_all_activities():
-    return get_activities()
+    return load_activities()
 
 
 @app.post("/activities/{activity_name}/signup")
