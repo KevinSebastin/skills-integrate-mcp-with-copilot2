@@ -224,9 +224,8 @@ def login(credentials: LoginRequest):
 @app.post("/auth/logout")
 def logout(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
-    current_user=Depends(get_current_user),
+    _current_user=Depends(get_current_user),
 ):
-    del current_user
     if credentials is not None:
         revoke_token(credentials.credentials)
 
@@ -255,6 +254,9 @@ def signup_for_activity(activity_name: str, current_user=Depends(get_current_use
     if email in activity["participants"]:
         raise HTTPException(status_code=400, detail="Student is already signed up")
 
+    if len(activity["participants"]) >= activity["max_participants"]:
+        raise HTTPException(status_code=400, detail="Activity is full")
+
     activity["participants"].append(email)
     activity.setdefault("attendance", {}).pop(email, None)
     return {"message": f"Signed up {email} for {activity_name}"}
@@ -282,9 +284,8 @@ def unregister_from_activity(
 @app.post("/activities")
 def create_activity(
     activity: ActivityPayload,
-    current_user=Depends(require_admin),
+    _current_user=Depends(require_admin),
 ):
-    del current_user
     if activity.name in activities:
         raise HTTPException(status_code=400, detail="Activity already exists")
 
@@ -302,9 +303,8 @@ def create_activity(
 def update_activity(
     activity_name: str,
     update: ActivityUpdatePayload,
-    current_user=Depends(require_admin),
+    _current_user=Depends(require_admin),
 ):
-    del current_user
     activity = get_activity_or_404(activity_name)
 
     new_name = update.name or activity_name
@@ -338,9 +338,8 @@ def update_activity(
 @app.delete("/activities/{activity_name}")
 def delete_activity(
     activity_name: str,
-    current_user=Depends(require_admin),
+    _current_user=Depends(require_admin),
 ):
-    del current_user
     get_activity_or_404(activity_name)
     activities.pop(activity_name)
     return {"message": f"Deleted activity {activity_name}"}
@@ -350,9 +349,8 @@ def delete_activity(
 def mark_attendance(
     activity_name: str,
     attendance: AttendancePayload,
-    current_user=Depends(require_admin),
+    _current_user=Depends(require_admin),
 ):
-    del current_user
     activity = get_activity_or_404(activity_name)
 
     if attendance.email not in activity["participants"]:

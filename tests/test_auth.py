@@ -78,6 +78,36 @@ class AuthRoleTests(unittest.TestCase):
         )
         self.assertEqual(attendance_response.status_code, 403)
 
+    def test_signup_respects_activity_capacity(self):
+        admin_headers = self.login("admin@mergington.edu", "adminpass")
+        michael_headers = self.login("michael@mergington.edu", "memberpass")
+        sophia_headers = self.login("sophia@mergington.edu", "memberpass")
+
+        create_response = self.client.post(
+            "/activities",
+            headers=admin_headers,
+            json={
+                "name": "Robotics Club",
+                "description": "Build robots",
+                "schedule": "Fridays",
+                "max_participants": 1,
+            },
+        )
+        self.assertEqual(create_response.status_code, 200)
+
+        first_signup = self.client.post(
+            "/activities/Robotics%20Club/signup",
+            headers=michael_headers,
+        )
+        self.assertEqual(first_signup.status_code, 200)
+
+        second_signup = self.client.post(
+            "/activities/Robotics%20Club/signup",
+            headers=sophia_headers,
+        )
+        self.assertEqual(second_signup.status_code, 400)
+        self.assertEqual(second_signup.json()["detail"], "Activity is full")
+
     def test_admin_can_manage_admin_only_operations(self):
         headers = self.login("admin@mergington.edu", "adminpass")
 
