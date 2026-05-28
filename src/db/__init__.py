@@ -188,10 +188,7 @@ def add_enrollment(activity_name, email):
                 (activity_id, email),
             )
         except sqlite3.IntegrityError as exc:
-            if (
-                getattr(exc, "sqlite_errorname", "") == "SQLITE_CONSTRAINT_UNIQUE"
-                or "UNIQUE constraint failed" in str(exc)
-            ):
+            if "UNIQUE constraint failed" in str(exc):
                 raise DuplicateEnrollmentError(email) from exc
             raise
 
