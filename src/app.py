@@ -95,6 +95,16 @@ def signup_for_activity(activity_name: str, email: str):
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
 
+    # Normalize email to lowercase
+    email = email.strip().lower()
+
+    # Validate school email domain
+    if not email.endswith("@mergington.edu"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only Mergington High School email addresses (@mergington.edu) are allowed"
+        )
+
     # Get the specific activity
     activity = activities[activity_name]
 
@@ -103,6 +113,13 @@ def signup_for_activity(activity_name: str, email: str):
         raise HTTPException(
             status_code=400,
             detail="Student is already signed up"
+        )
+
+    # Enforce capacity limit
+    if len(activity["participants"]) >= activity["max_participants"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Activity is full"
         )
 
     # Add student
