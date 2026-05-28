@@ -5,7 +5,7 @@ A super simple FastAPI application that allows students to view and sign up
 for extracurricular activities at Mergington High School.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
@@ -78,6 +78,42 @@ activities = {
 }
 
 
+def get_activity_or_404(activity_name: str):
+    """Return an activity or raise a 404 error."""
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    return activities[activity_name]
+
+
+def validate_text_field(value, field_name: str):
+    """Validate and normalize a required text field."""
+    if not isinstance(value, str) or not value.strip():
+        raise HTTPException(status_code=400, detail=f"{field_name} is required")
+
+    return value.strip()
+
+
+def validate_activity_payload(payload: dict):
+    """Validate admin activity payloads."""
+    title = validate_text_field(payload.get("title"), "Title")
+    description = validate_text_field(payload.get("description"), "Description")
+    schedule = validate_text_field(payload.get("schedule"), "Schedule")
+    capacity = payload.get("capacity")
+
+    if not isinstance(capacity, int) or isinstance(capacity, bool) or capacity <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Capacity must be a positive integer"
+        )
+
+    return title, {
+        "description": description,
+        "schedule": schedule,
+        "max_participants": capacity
+    }
+
+
 @app.get("/")
 def root():
     return RedirectResponse(url="/static/index.html")
@@ -88,15 +124,60 @@ def get_activities():
     return activities
 
 
+@app.post("/admin/activities")
+def create_activity(payload: dict = Body(...)):
+    """Create a new activity."""
+    title, activity_data = validate_activity_payload(payload)
+
+    if title in activities:
+        raise HTTPException(status_code=400, detail="Activity already exists")
+
+    activities[title] = {
+        **activity_data,
+        "participants": []
+    }
+    return {"message": f"Created activity {title}"}
+
+
+@app.put("/admin/activities/{activity_name}")
+def update_activity(activity_name: str, payload: dict = Body(...)):
+    """Update an existing activity."""
+    existing_activity = get_activity_or_404(activity_name)
+    title, activity_data = validate_activity_payload(payload)
+
+    if title != activity_name and title in activities:
+        raise HTTPException(status_code=400, detail="Activity already exists")
+
+    if activity_data["max_participants"] < len(existing_activity["participants"]):
+        raise HTTPException(
+            status_code=400,
+            detail="Capacity cannot be lower than current participant count"
+        )
+
+    updated_activity = {
+        **activity_data,
+        "participants": existing_activity["participants"]
+    }
+
+    if title != activity_name:
+        del activities[activity_name]
+
+    activities[title] = updated_activity
+    return {"message": f"Updated activity {title}"}
+
+
+@app.delete("/admin/activities/{activity_name}")
+def delete_activity(activity_name: str):
+    """Delete an activity."""
+    get_activity_or_404(activity_name)
+    del activities[activity_name]
+    return {"message": f"Deleted activity {activity_name}"}
+
+
 @app.post("/activities/{activity_name}/signup")
 def signup_for_activity(activity_name: str, email: str):
     """Sign up a student for an activity"""
-    # Validate activity exists
-    if activity_name not in activities:
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    # Get the specific activity
-    activity = activities[activity_name]
+    activity = get_activity_or_404(activity_name)
 
     # Validate student is not already signed up
     if email in activity["participants"]:
@@ -113,12 +194,7 @@ def signup_for_activity(activity_name: str, email: str):
 @app.delete("/activities/{activity_name}/unregister")
 def unregister_from_activity(activity_name: str, email: str):
     """Unregister a student from an activity"""
-    # Validate activity exists
-    if activity_name not in activities:
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    # Get the specific activity
-    activity = activities[activity_name]
+    activity = get_activity_or_404(activity_name)
 
     # Validate student is signed up
     if email not in activity["participants"]:
