@@ -60,6 +60,6 @@ The application uses a simple SQLite-backed data model with meaningful identifie
    - Student email
    - Enrollment timestamp
 
-The database schema is initialized automatically on startup using SQLite
-metadata creation, and existing activities and enrollments persist across
-server restarts.
+The database schema is initialized automatically on startup using SQL DDL
+statements, and existing activities and enrollments persist across server
+restarts.

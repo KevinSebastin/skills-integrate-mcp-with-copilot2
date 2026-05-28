@@ -3,6 +3,18 @@ from pathlib import Path
 
 DATABASE_PATH = Path(__file__).with_name("activities.sqlite")
 
+
+class ActivityNotFoundError(LookupError):
+    pass
+
+
+class DuplicateEnrollmentError(ValueError):
+    pass
+
+
+class EnrollmentNotFoundError(ValueError):
+    pass
+
 INITIAL_ACTIVITIES = {
     "Chess Club": {
         "description": "Learn strategies and compete in chess tournaments",
@@ -158,7 +170,7 @@ def get_activity_id(connection, activity_name):
         (activity_name,),
     ).fetchone()
     if row is None:
-        raise LookupError(activity_name)
+        raise ActivityNotFoundError(activity_name)
 
     return row["id"]
 
@@ -176,7 +188,9 @@ def add_enrollment(activity_name, email):
                 (activity_id, email),
             )
         except sqlite3.IntegrityError as exc:
-            raise ValueError(email) from exc
+            if "UNIQUE constraint failed: enrollments.activity_id, enrollments.student_email" in str(exc):
+                raise DuplicateEnrollmentError(email) from exc
+            raise
 
 
 def remove_enrollment(activity_name, email):
@@ -191,4 +205,4 @@ def remove_enrollment(activity_name, email):
         )
 
         if result.rowcount == 0:
-            raise ValueError(email)
+            raise EnrollmentNotFoundError(email)

@@ -6,7 +6,6 @@ for extracurricular activities at Mergington High School.
 """
 
 from contextlib import asynccontextmanager
-import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -14,9 +13,25 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 try:
-    from .db import add_enrollment, get_activities, initialize_database, remove_enrollment
+    from .db import (
+        ActivityNotFoundError,
+        DuplicateEnrollmentError,
+        EnrollmentNotFoundError,
+        add_enrollment,
+        get_activities,
+        initialize_database,
+        remove_enrollment,
+    )
 except ImportError:  # pragma: no cover - supports running `python app.py`
-    from db import add_enrollment, get_activities, initialize_database, remove_enrollment
+    from db import (
+        ActivityNotFoundError,
+        DuplicateEnrollmentError,
+        EnrollmentNotFoundError,
+        add_enrollment,
+        get_activities,
+        initialize_database,
+        remove_enrollment,
+    )
 
 
 @asynccontextmanager
@@ -32,7 +47,7 @@ app = FastAPI(
 
 # Mount the static files directory
 current_dir = Path(__file__).parent
-app.mount("/static", StaticFiles(directory=os.path.join(current_dir, "static")), name="static")
+app.mount("/static", StaticFiles(directory=current_dir / "static"), name="static")
 
 @app.get("/")
 def root():
@@ -49,9 +64,9 @@ def signup_for_activity(activity_name: str, email: str):
     """Sign up a student for an activity"""
     try:
         add_enrollment(activity_name, email)
-    except LookupError as exc:
+    except ActivityNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Activity not found") from exc
-    except ValueError as exc:
+    except DuplicateEnrollmentError as exc:
         raise HTTPException(status_code=400, detail="Student is already signed up") from exc
 
     return {"message": f"Signed up {email} for {activity_name}"}
@@ -62,9 +77,9 @@ def unregister_from_activity(activity_name: str, email: str):
     """Unregister a student from an activity"""
     try:
         remove_enrollment(activity_name, email)
-    except LookupError as exc:
+    except ActivityNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Activity not found") from exc
-    except ValueError as exc:
+    except EnrollmentNotFoundError as exc:
         raise HTTPException(
             status_code=400,
             detail="Student is not signed up for this activity",
