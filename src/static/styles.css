@@ -125,6 +125,28 @@ section h3 {
   background-color: #ffebee;
 }
 
+.attendance-status {
+  margin-right: 8px;
+  padding: 4px;
+}
+
+.attendance-btn {
+  background-color: #2e7d32;
+  margin-right: 6px;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+.attendance-btn:hover {
+  background-color: #1b5e20;
+}
+
+.pending-label {
+  margin-right: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
 .participants-section p {
   color: #777;
   font-style: italic;
@@ -190,6 +212,24 @@ button:hover {
 
 .hidden {
   display: none;
+}
+
+.attendance-results {
+  margin-top: 15px;
+}
+
+.history-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.history-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.error-text {
+  color: #c62828;
 }
 
 footer {

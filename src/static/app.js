@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitiesList = document.getElementById("activities-list");
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
+  const attendanceHistoryForm = document.getElementById("attendance-history-form");
+  const attendanceHistoryResults = document.getElementById("attendance-history-results");
   const messageDiv = document.getElementById("message");
 
   // Function to fetch activities from API
@@ -12,11 +14,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
+        const today = new Date().toISOString().slice(0, 10);
+        const isCompleted = details.event_date <= today;
 
         const spotsLeft =
           details.max_participants - details.participants.length;
@@ -30,7 +35,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                      `<li>
+                        <span class="participant-email">${email}</span>
+                        ${
+                          isCompleted
+                            ? `<select class="attendance-status" data-activity="${name}" data-email="${email}">
+                                <option value="present" ${
+                                  details.attendance?.[email] === "present" ? "selected" : ""
+                                }>Present</option>
+                                <option value="absent" ${
+                                  details.attendance?.[email] === "absent" ? "selected" : ""
+                                }>Absent</option>
+                              </select>
+                              <button class="attendance-btn" data-activity="${name}" data-email="${email}">Mark</button>`
+                            : `<span class="pending-label">Attendance available after event date</span>`
+                        }
+                        <button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button>
+                      </li>`
                   )
                   .join("")}
               </ul>
@@ -41,6 +62,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <p><strong>Event Date:</strong> ${details.event_date}</p>
+          <p><strong>Status:</strong> ${
+            isCompleted ? "Completed" : "Upcoming"
+          }</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-container">
             ${participantsHTML}
@@ -60,10 +85,58 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll(".delete-btn").forEach((button) => {
         button.addEventListener("click", handleUnregister);
       });
+      document.querySelectorAll(".attendance-btn").forEach((button) => {
+        button.addEventListener("click", handleMarkAttendance);
+      });
     } catch (error) {
       activitiesList.innerHTML =
         "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
+    }
+  }
+
+  async function handleMarkAttendance(event) {
+    const button = event.target;
+    const activity = button.getAttribute("data-activity");
+    const email = button.getAttribute("data-email");
+    const statusSelect = document.querySelector(
+      `.attendance-status[data-activity="${activity}"][data-email="${email}"]`
+    );
+    const status = statusSelect?.value;
+
+    try {
+      const response = await fetch(
+        `/activities/${encodeURIComponent(
+          activity
+        )}/attendance?email=${encodeURIComponent(email)}&status=${encodeURIComponent(
+          status
+        )}`,
+        {
+          method: "POST",
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        messageDiv.textContent = result.message;
+        messageDiv.className = "success";
+      } else {
+        messageDiv.textContent = result.detail || "An error occurred";
+        messageDiv.className = "error";
+      }
+
+      messageDiv.classList.remove("hidden");
+      setTimeout(() => {
+        messageDiv.classList.add("hidden");
+      }, 5000);
+
+      fetchActivities();
+    } catch (error) {
+      messageDiv.textContent = "Failed to mark attendance. Please try again.";
+      messageDiv.className = "error";
+      messageDiv.classList.remove("hidden");
+      console.error("Error marking attendance:", error);
     }
   }
 
@@ -152,6 +225,45 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  attendanceHistoryForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const email = document.getElementById("attendance-email").value;
+
+    try {
+      const response = await fetch(`/students/${encodeURIComponent(email)}/attendance`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        attendanceHistoryResults.innerHTML = `<p class="error-text">${
+          result.detail || "Failed to load attendance history."
+        }</p>`;
+        return;
+      }
+
+      if (!result.attendance_history || result.attendance_history.length === 0) {
+        attendanceHistoryResults.innerHTML = `<p><em>${
+          result.message || "No attendance history found."
+        }</em></p>`;
+        return;
+      }
+
+      attendanceHistoryResults.innerHTML = `
+        <ul class="history-list">
+          ${result.attendance_history
+            .map(
+              (entry) =>
+                `<li><strong>${entry.activity}</strong> (${entry.event_date}) - ${entry.status}</li>`
+            )
+            .join("")}
+        </ul>
+      `;
+    } catch (error) {
+      attendanceHistoryResults.innerHTML =
+        '<p class="error-text">Failed to load attendance history. Please try again.</p>';
+      console.error("Error loading attendance history:", error);
     }
   });
 
