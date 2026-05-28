@@ -101,7 +101,7 @@ def validate_activity_payload(payload: dict):
     schedule = validate_text_field(payload.get("schedule"), "Schedule")
     capacity = payload.get("capacity")
 
-    if isinstance(capacity, bool) or not isinstance(capacity, int) or capacity <= 0:
+    if not isinstance(capacity, int) or isinstance(capacity, bool) or capacity <= 0:
         raise HTTPException(
             status_code=400,
             detail="Capacity must be a positive integer"

@@ -21,15 +21,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return String(value).replace(
       /[&<>"']/g,
       (character) =>
-        (
-          {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;",
-          }[character]
-        )
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[character] || character)
     );
   }
 
@@ -128,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const safeName = escapeHtml(name);
         const safeDescription = escapeHtml(details.description);
         const safeSchedule = escapeHtml(details.schedule);
+        const encodedName = encodeURIComponent(name);
         const spotsLeft =
           details.max_participants - details.participants.length;
 
@@ -139,11 +138,15 @@ document.addEventListener("DOMContentLoaded", () => {
                   ${details.participants
                     .map(
                       (email) =>
+                        {
+                          const encodedEmail = encodeURIComponent(email);
+
+                          return (
                         `<li><span class="participant-email">${escapeHtml(
                           email
-                        )}</span><button class="delete-btn" data-activity="${safeName}" data-email="${escapeHtml(
-                          email
-                        )}" type="button">❌</button></li>`
+                        )}</span><button class="delete-btn" data-activity="${encodedName}" data-email="${encodedEmail}" type="button">❌</button></li>`
+                          );
+                        }
                     )
                     .join("")}
                 </ul>
@@ -159,10 +162,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ${participantsHTML}
           </div>
           <div class="activity-admin-actions">
-            <button class="secondary-btn edit-activity-btn" data-activity="${safeName}" type="button">
+            <button class="secondary-btn edit-activity-btn" data-activity="${encodedName}" type="button">
               Edit
             </button>
-            <button class="danger-btn delete-activity-btn" data-activity="${safeName}" type="button">
+            <button class="danger-btn delete-activity-btn" data-activity="${encodedName}" type="button">
               Delete
             </button>
           </div>
@@ -183,8 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function handleUnregister(button) {
-    const activity = button.getAttribute("data-activity");
-    const email = button.getAttribute("data-email");
+    const activity = decodeURIComponent(button.getAttribute("data-activity"));
+    const email = decodeURIComponent(button.getAttribute("data-email"));
 
     try {
       const response = await fetch(
@@ -215,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function handleDeleteActivity(button) {
-    const activity = button.getAttribute("data-activity");
+    const activity = decodeURIComponent(button.getAttribute("data-activity"));
 
     if (!window.confirm(`Delete ${activity}?`)) {
       return;
@@ -268,7 +271,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (button.classList.contains("edit-activity-btn")) {
-      loadActivityIntoAdminForm(button.getAttribute("data-activity"));
+      loadActivityIntoAdminForm(
+        decodeURIComponent(button.getAttribute("data-activity"))
+      );
       return;
     }
 
