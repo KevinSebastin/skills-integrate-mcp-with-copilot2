@@ -20,8 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
-        const eventDate = new Date(`${details.event_date}T00:00:00`);
-        const isCompleted = eventDate <= new Date();
+        const today = new Date().toISOString().slice(0, 10);
+        const isCompleted = details.event_date <= today;
 
         const spotsLeft =
           details.max_participants - details.participants.length;
