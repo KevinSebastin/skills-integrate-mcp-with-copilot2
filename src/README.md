@@ -6,6 +6,8 @@ A super simple FastAPI application that allows students to view and sign up for 
 
 - View all available extracurricular activities
 - Sign up for activities
+- Mark attendance for completed activities
+- View attendance history for students
 
 ## Getting Started
 
@@ -31,6 +33,8 @@ A super simple FastAPI application that allows students to view and sign up for 
 | ------ | ----------------------------------------------------------------- | ------------------------------------------------------------------- |
 | GET    | `/activities`                                                     | Get all activities with their details and current participant count |
 | POST   | `/activities/{activity_name}/signup?email=student@mergington.edu` | Sign up for an activity                                             |
+| POST   | `/activities/{activity_name}/attendance?email=student@mergington.edu&status=present` | Mark attendance for a completed activity                            |
+| GET    | `/students/{email}/attendance`                                    | Get attendance history for completed activities                     |
 
 ## Data Model
 
@@ -40,8 +44,10 @@ The application uses a simple data model with meaningful identifiers:
 
    - Description
    - Schedule
+   - Event date
    - Maximum number of participants allowed
    - List of student emails who are signed up
+   - Attendance map (`present`/`absent`) per enrolled student
 
 2. **Students** - Uses email as identifier:
    - Name

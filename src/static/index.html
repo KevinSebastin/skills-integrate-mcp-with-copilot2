@@ -39,6 +39,25 @@
         </form>
         <div id="message" class="hidden"></div>
       </section>
+
+      <section id="history-container">
+        <h3>Attendance History</h3>
+        <form id="attendance-history-form">
+          <div class="form-group">
+            <label for="attendance-email">Student Email:</label>
+            <input
+              type="email"
+              id="attendance-email"
+              required
+              placeholder="your-email@mergington.edu"
+            />
+          </div>
+          <button type="submit">View Attendance History</button>
+        </form>
+        <div id="attendance-history-results" class="attendance-results">
+          <p><em>No attendance history loaded yet.</em></p>
+        </div>
+      </section>
     </main>
 
     <footer>
