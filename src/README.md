@@ -17,10 +17,10 @@ A super simple FastAPI application that allows students to view and sign up for 
    pip install fastapi uvicorn
    ```
 
-2. Start the application from the `src` directory:
+2. From the project root, start the application with:
 
    ```
-   python app.py
+   cd src && python app.py
    ```
 
    On first startup, the app creates `db/activities.sqlite` and seeds the
