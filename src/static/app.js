@@ -46,6 +46,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 5000);
   }
 
+  function clearMessage(target) {
+    if (target.hideTimeoutId) {
+      clearTimeout(target.hideTimeoutId);
+      target.hideTimeoutId = null;
+    }
+
+    target.textContent = "";
+    target.className = "hidden";
+  }
+
   function formatError(result, fallbackMessage) {
     if (!result) {
       return fallbackMessage;
@@ -351,7 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   adminCancelButton.addEventListener("click", () => {
     resetAdminForm();
-    adminMessageDiv.className = "hidden";
+    clearMessage(adminMessageDiv);
   });
 
   fetchActivities();
